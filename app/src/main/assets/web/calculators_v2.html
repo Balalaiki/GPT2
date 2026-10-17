@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Помощник КИПиА — Полевые Калькуляторы v2.0</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-dark: #0284c7;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --input-bg: #090d16;
+  }
+  [data-theme="light"] {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --card-border: #cbd5e1;
+    --text: #0f172a;
+    --muted: #475569;
+    --accent: #0284c7;
+    --accent-dark: #0369a1;
+    --green: #16a34a;
+    --amber: #d97706;
+    --red: #dc2626;
+    --input-bg: #f8fafc;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    padding-bottom: 40px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--card); border-bottom: 1px solid var(--card-border);
+    padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .header-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .badge { background: var(--accent-dark); color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 6px; }
+  .theme-btn {
+    background: transparent; border: 1px solid var(--card-border); color: var(--text);
+    padding: 7px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  .nav-tabs {
+    display: flex; overflow-x: auto; gap: 8px; padding: 12px 16px;
+    background: var(--bg); border-bottom: 1px solid var(--card-border);
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex: 0 0 auto; padding: 10px 14px; border-radius: 10px;
+    border: 1px solid var(--card-border); background: var(--card);
+    color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--accent-dark); color: #fff; border-color: var(--accent);
+  }
+  .container { max-width: 680px; margin: 0 auto; padding: 14px; }
+  .calc-screen { display: none; }
+  .calc-screen.active { display: block; }
+  .card {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  }
+  .card-title { font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: var(--accent); }
+  .hint-box {
+    background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--accent);
+    padding: 10px 12px; border-radius: 6px; font-size: 13.5px; line-height: 1.45;
+    margin-bottom: 14px; color: var(--text);
+  }
+  .warn-box {
+    background: rgba(245, 158, 11, 0.12); border-left: 4px solid var(--amber);
+    padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.4;
+    margin-top: 12px; color: var(--text);
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  @media (max-width: 420px) {
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 5px;
+  }
+  input[type="number"], input[type="text"], select {
+    width: 100%; padding: 12px; font-size: 16px; font-weight: 600;
+    background: var(--input-bg); color: var(--text);
+    border: 1.5px solid var(--card-border); border-radius: 10px;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .result-banner {
+    background: rgba(34, 197, 94, 0.12); border: 1.5px solid var(--green);
+    border-radius: 12px; padding: 14px; margin: 12px 0;
+  }
+  .result-banner.error {
+    background: rgba(239, 68, 68, 0.15); border-color: var(--red);
+  }
+  .res-main { font-size: 24px; font-weight: 800; color: var(--green); }
+  .result-banner.error .res-main { color: var(--red); font-size: 17px; }
+  .res-sub { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+  table.pts-table {
+    width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;
+  }
+  table.pts-table th, table.pts-table td {
+    border: 1px solid var(--card-border); padding: 8px 6px; text-align: center;
+  }
+  table.pts-table th { background: rgba(148, 163, 184, 0.12); color: var(--muted); font-weight: 600; }
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .q-btn {
+    background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text);
+    padding: 6px 10px; border-radius: 8px; font-size: 12.5px; cursor: pointer; font-weight: 600;
+  }
+  .q-btn:active, .q-btn.sel { background: var(--accent-dark); color: #fff; border-color: var(--accent); }
+  .formula-line { font-family: monospace; font-size: 13px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <span>🔧 Помощник КИПиА</span>
+    <span class="badge">Калькуляторы 2.0</span>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">☀️/🌙 Тема</button>
+</header>
+
+<div class="nav-tabs" id="navTabs">
+  <button class="tab-btn active" onclick="openTab('tab-loop', this)">1. Токовая петля (мА ↔ Шкала)</button>
+  <button class="tab-btn" onclick="openTab('tab-rtd', this)">2. Термосопротивления (Ом ↔ °C)</button>
+  <button class="tab-btn" onclick="openTab('tab-tc', this)">3. Термопары (мВ ↔ °C)</button>
+  <button class="tab-btn" onclick="openTab('tab-dp', this)">4. Перепад → Расход (Корень √ΔP)</button>
+  <button class="tab-btn" onclick="openTab('tab-level', this)">5. Уровень по давлению (мм в.ст.)</button>
+  <button class="tab-btn" onclick="openTab('tab-press', this)">6. Конвертер давления</button>
+  <button class="tab-btn" onclick="openTab('tab-acc', this)">7. Погрешность и отбраковка</button>
+  <button class="tab-btn" onclick="openTab('tab-elec', this)">8. Цепь 24В и кабель</button>
+</div>
+
+<div class="container">
+
+  <!-- 1. ТОКОВАЯ ПЕТЛЯ -->
+  <div class="calc-screen active" id="tab-loop">
+    <div class="card">
+      <h2 class="card-title">1. Универсальный калькулятор сигнала (4–20 мА, 0–5 мА, 0–10 В)</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> Замерил миллиамперы мультиметром в разрыв цепи (или на проверочных клеммах) — сразу видишь, сколько атмосфер или градусов выдаёт датчик. Либо вводишь нужное давление/температуру — узнаёшь, сколько мА подать с калибратора для проверки вторичного прибора и ПЛК.
+      </div>
+
+      <div class="field">
+        <label>Тип выходного сигнала датчика:</label>
+        <select id="loop_type" onchange="calcLoop('scale')">
+          <option value="4_20">4...20 мА (основной промышленный стандарт)</option>
+          <option value="0_5">0...5 мА (отечественные приборы: ДИСК-250, МЭД, ДМ, Сапфир)</option>
+          <option value="0_20">0...20 мА (без «живого нуля»)</option>
+          <option value="0_10v">0...10 В (напряжение)</option>
+        </select>
+      </div>
+
+      <label style="font-size:12.5px; color:var(--muted); display:block; margin-bottom:6px;">Быстрый выбор типовой шкалы датчика:</label>
+      <div class="quick-btns">
+        <button class="q-btn" onclick="setLoopScale(0, 1.0, 'МПа')">0...1,0 МПа</button>
+        <button class="q-btn" onclick="setLoopScale(0, 1.6, 'МПа')">0...1,6 МПа</button>
+        <button class="q-btn" onclick="setLoopScale(0, 10, 'кгс/см²')">0...10 кгс/см²</button>
+        <button class="q-btn" onclick="setLoopScale(0, 150, '°C')">0...150 °C</button>
+        <button class="q-btn" onclick="setLoopScale(-50, 50, '°C')">-50...+50 °C</button>
+        <button class="q-btn" onclick="setLoopScale(-100, 100, 'Па')">-100...+100 Па (тяга)</button>
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label>Нижний предел (НПИ, 0%)</label>
+          <input type="number" step="any" id="loop_lrv" value="0" oninput="calcLoop('scale')">
+        </div>
+        <div class="field">
+          <label>Верхний предел (ВПИ, 100%)</label>
+          <input type="number" step="any" id="loop_urv" value="1.6" oninput="calcLoop('scale')">
+        </div>
+        <div class="field">
+          <label>Единица изм.</label>
+          <input type="text" id="loop_unit" value="МПа" oninput="calcLoop('scale')">
+        </div>
+      </div>
+
+      <hr style="border:0; border-top:1px solid var(--card-border); margin: 14px 0;">
+
+      <div class="grid-2">
+        <div class="field">
+          <label id="lbl_loop_sig" style="color:var(--accent);">⚡ Введи сигнал (мА):</label>
+          <input type="number" step="any" id="loop_sig" value="12" oninput="calcLoop('sig')">
+        </div>
+        <div class="field">
+          <label id="lbl_loop_pv" style="color:var(--green);">🎯 Или введи показание (МПа):</label>
+          <input type="number" step="any" id="loop_pv" value="0.8" oninput="calcLoop('pv')">
+        </div>
+      </div>
+
+      <div class="result-banner" id="loop_res_box">
+        <div class="res-main" id="loop_res_main">0.800 МПа (50.0% шкалы)</div>
+        <div class="res-sub" id="loop_res_sub">Сигнал: 12.00 мА | На шунте 250 Ом: 3.000 В | На шунте 500 Ом: 6.000 В</div>
+      </div>
+
+      <label style="font-size:13px; font-weight:700; color:var(--muted);">📋 Контрольные точки для протокола поверки / прогонки шкалы:</label>
+      <table class="pts-table">
+        <thead>
+          <tr>
+            <th>Точка (%)</th>
+            <th>Значение по шкале</th>
+            <th id="th_loop_sig">Сигнал</th>
+            <th>На резисторе 250 Ом</th>
+          </tr>
+        </thead>
+        <tbody id="loop_table_body"></tbody>
+      </table>
+      <div class="formula-line">Формула: Значение = НПИ + (ВПИ − НПИ) × (I − Iмин) / (Iмакс − Iмин)</div>
+    </div>
+  </div>
+
+  <!-- 2. ТЕРМОСОПРОТИВЛЕНИЯ (ТС) -->
+  <div class="calc-screen" id="tab-rtd">
+    <div class="card">
+      <h2 class="card-title">2. Термометры сопротивления (ГОСТ 6651 / МЭК 60751): Ом ↔ °C</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> Отключил термометр сопротивления (ТСМ или ТСП), замерил мультиметром сопротивление на головке — сразу узнал температуру. Поддерживаются как отечественные медные/платиновые датчики (<b>50М, 100М, 50П, 100П</b>), так и импортные (<b>Pt100, Pt1000</b>).
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Тип датчика (НСХ по паспорту/шильдику):</label>
+          <select id="rtd_type" onchange="calcRtd('r')">
+            <option value="Pt100">Pt100 (Платина, R₀=100 Ом, α=0.00385)</option>
+            <option value="100P">100П (Платина ГОСТ, R₀=100 Ом, α=0.00391)</option>
+            <option value="50P">50П (Платина ГОСТ, R₀=50 Ом, α=0.00391)</option>
+            <option value="100M">100М (Медь ГОСТ, R₀=100 Ом, α=0.00428)</option>
+            <option value="50M" selected>50М (Медь ГОСТ, R₀=50 Ом, α=0.00428)</option>
+            <option value="Pt1000">Pt1000 (Платина, R₀=1000 Ом, α=0.00385)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Сопротивление жил кабеля (для 2-пров. схемы), Ом:</label>
+          <input type="number" step="any" id="rtd_lead" value="0" oninput="calcRtd('r')">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label style="color:var(--accent);">Ω Замеренное сопротивление (Ом):</label>
+          <input type="number" step="any" id="rtd_r" value="60.7" oninput="calcRtd('r')">
+        </div>
+        <div class="field">
+          <label style="color:var(--green);">🌡️ Или известная температура (°C):</label>
+          <input type="number" step="any" id="rtd_t" value="50" oninput="calcRtd('t')">
+        </div>
+      </div>
+
+      <div class="result-banner" id="rtd_res_box">
+        <div class="res-main" id="rtd_res_main">50.0 °C ↔ 60.70 Ом</div>
+        <div class="res-sub" id="rtd_res_sub">При 0 °C датчик 50М имеет ровно 50.00 Ом. Чувствительность: ~0.214 Ом на каждый 1 °C.</div>
+      </div>
+
+      <label style="font-size:13px; font-weight:700; color:var(--muted);">📋 Опорная таблица НСХ выбранного датчика:</label>
+      <table class="pts-table">
+        <thead>
+          <tr><th>Температура (°C)</th><th>Сопротивление (Ом)</th><th>Прирост на 10 °C</th></tr>
+        </thead>
+        <tbody id="rtd_table_body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. ТЕРМОПАРЫ (ТП) -->
+  <div class="calc-screen" id="tab-tc">
+    <div class="card">
+      <h2 class="card-title">3. Термопары (ТХА, ТХК, ТПП, ТЖК): мВ ↔ °C с холодным спаем</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> Термопара вырабатывает милливольты (мВ) не от абсолютной температуры в топке, а от <b>разницы температур</b> между рабочим спаем (в печи/котле) и свободными концами (клеммником). Этот калькулятор автоматически учитывает температуру воздуха у клемм!
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Тип термопары:</label>
+          <select id="tc_type" onchange="calcTc('mv')">
+            <option value="K">ТХА (тип K, Хромель-Алюмель) — до 1100 °C</option>
+            <option value="L">ТХК (тип L, Хромель-Копель ГОСТ) — до 600 °C</option>
+            <option value="J">ТЖК (тип J, Железо-Константан) — до 750 °C</option>
+            <option value="S">ТПП (тип S, Платинородий-Платина) — до 1300 °C</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Температура холодного спая (у клемм прибора), °C:</label>
+          <input type="number" step="any" id="tc_cold" value="25" oninput="calcTc('mv')">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label style="color:var(--accent);">⚡ Показания мультиметра на клеммах (мВ):</label>
+          <input type="number" step="any" id="tc_mv" value="11.2" oninput="calcTc('mv')">
+        </div>
+        <div class="field">
+          <label style="color:var(--green);">🔥 Или реальная температура в точке (°C):</label>
+          <input type="number" step="any" id="tc_t" value="300" oninput="calcTc('t')">
+        </div>
+      </div>
+
+      <div class="result-banner" id="tc_res_box">
+        <div class="res-main" id="tc_res_main">300.0 °C</div>
+        <div class="res-sub" id="tc_res_sub">С учётом холодного спая +25 °C (поправка +1.00 мВ)</div>
+      </div>
+      <div class="warn-box">
+        ⚠️ <b>Помни при подключении:</b> Удлинять термопару нужно только термоэлектродным (компенсационным) кабелем той же марки и соблюдать полярность («+» и «−»). Если перепутать жилы местами — при нагреве прибор пойдёт в минус или зашкалит вниз!
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. РАСХОД ПО ПЕРЕПАДУ (КОРЕНЬ) -->
+  <div class="calc-screen" id="tab-dp">
+    <div class="card">
+      <h2 class="card-title">4. Расходомер на сужающем устройстве (Шайба / Диафрагма): Перепад ΔP ↔ Расход Q</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> На диафрагме зависимость между перепадом давления $\Delta P$ и расходом $Q$ <b>квадратичная</b> ($Q \sim \sqrt{\Delta P}$). Чтобы расход вырос до 50% шкалы, перепад давления на дифманометре (ДМ, МЭД, Сапфир, Метран) должен составить всего <b>25%</b> от максимума!
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label>Макс. перепад ДМ (ΔPмакс)</label>
+          <input type="number" step="any" id="dp_max" value="16" oninput="calcDp('dp')">
+        </div>
+        <div class="field">
+          <label>Ед. перепада</label>
+          <select id="dp_unit" onchange="calcDp('dp')">
+            <option value="кПа">кПа</option>
+            <option value="кгс/м² (мм в.ст.)">кгс/м² (мм в.ст.)</option>
+            <option value="кгс/см²">кгс/см²</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Макс. расход шкалы (Qмакс)</label>
+          <input type="number" step="any" id="dp_qmax" value="100" oninput="calcDp('dp')">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label style="color:var(--accent);">📉 Заданный перепад ΔP:</label>
+          <input type="number" step="any" id="dp_val" value="4" oninput="calcDp('dp')">
+        </div>
+        <div class="field">
+          <label style="color:var(--green);">🌊 Или нужный расход Q (м³/ч, т/ч):</label>
+          <input type="number" step="any" id="dp_q" value="50" oninput="calcDp('q')">
+        </div>
+      </div>
+
+      <div class="result-banner" id="dp_res_box">
+        <div class="res-main" id="dp_res_main">Расход: 50.00 (50.0% шкалы)</div>
+        <div class="res-sub" id="dp_res_sub">Перепад: 4.00 кПа (25.0% от ΔPмакс) | Ток (линейный по ΔP): 8.00 мА | Ток (с корнем по Q): 12.00 мА</div>
+      </div>
+
+      <label style="font-size:13px; font-weight:700; color:var(--muted);">📋 Таблица настройки дифманометра-расходомера (по расходу):</label>
+      <table class="pts-table">
+        <thead>
+          <tr>
+            <th>Расход (%)</th>
+            <th>Расход (Q)</th>
+            <th>Нужный перепад ΔP (%)</th>
+            <th>Перепад ΔP в приборах</th>
+            <th>Ток 4-20 мА (без корня / с корнем)</th>
+          </tr>
+        </thead>
+        <tbody id="dp_table_body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. ГИДРОСТАТИЧЕСКИЙ УРОВЕНЬ -->
+  <div class="calc-screen" id="tab-level">
+    <div class="card">
+      <h2 class="card-title">5. Гидростатический уровень жидкости (Бак / Деаэратор / Барабан)</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> Перевод высоты столба воды (в метрах или миллиметрах) в давление, которое давит на мембрану датчика уровня ($\Delta P = 
+ho \cdot g \cdot H$). Учитывает плотность горячей воды (например, в деаэраторе при 104 °C плотность воды уже ~955 кг/м³, а не 1000!).
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Среда и температура (плотность кг/м³):</label>
+          <select id="lvl_rho_sel" onchange="onLvlRhoSel()">
+            <option value="1000">Холодная вода +20 °C (1000 кг/м³)</option>
+            <option value="955">Вода в деаэраторе +104 °C (955 кг/м³)</option>
+            <option value="917">Вода в котле +150 °C (917 кг/м³)</option>
+            <option value="850">Мазут / дизтопливо (850 кг/м³)</option>
+            <option value="custom">Ввести плотность вручную...</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Плотность жидкости ρ (кг/м³):</label>
+          <input type="number" step="any" id="lvl_rho" value="1000" oninput="calcLevel('h')">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label style="color:var(--accent);">📏 Высота столба жидкости H (мм):</label>
+          <input type="number" step="any" id="lvl_h" value="1600" oninput="calcLevel('h')">
+        </div>
+        <div class="field">
+          <label style="color:var(--green);">⏲️ Или давление датчика ΔP (кПа):</label>
+          <input type="number" step="any" id="lvl_p" value="15.696" oninput="calcLevel('p')">
+        </div>
+      </div>
+
+      <div class="result-banner" id="lvl_res_box">
+        <div class="res-main" id="lvl_res_main">15.70 кПа (1600 мм вод. ст.)</div>
+        <div class="res-sub" id="lvl_res_sub">В кгс/см²: 0.160 кгс/см² | Высота уровня: 1.600 м (1600 мм)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. КОНВЕРТЕР ДАВЛЕНИЯ -->
+  <div class="calc-screen" id="tab-press">
+    <div class="card">
+      <h2 class="card-title">6. Мгновенный перевод всех единиц давления (СССР / СИ / Импорт)</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> На старом манометре или в инструкции написано в <b>кгс/см²</b> или <b>мм вод. ст.</b>, а новый датчик или задатчик проградуирован в <b>МПа, кПа или барах</b>. Введи число и выбери его единицу — все остальные пересчитаются сразу!
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label style="color:var(--accent);">Введи значение давления:</label>
+          <input type="number" step="any" id="pr_val" value="1" oninput="calcPress()">
+        </div>
+        <div class="field">
+          <label>Исходная единица:</label>
+          <select id="pr_unit" onchange="calcPress()">
+            <option value="kgf_cm2" selected>кгс/см² (техническая атмосфера, ат)</option>
+            <option value="MPa">МПа (Мегапаскаль)</option>
+            <option value="kPa">кПа (Килопаскаль)</option>
+            <option value="bar">бар (bar)</option>
+            <option value="mmH2O">мм вод. ст. (кгс/м² — тяга/напор)</option>
+            <option value="Pa">Па (Паскаль)</option>
+            <option value="mmHg">мм рт. ст. (торр)</option>
+          </select>
+        </div>
+      </div>
+
+      <table class="pts-table" id="pr_table">
+        <thead>
+          <tr><th>Единица измерения</th><th>Значение</th><th>Где обычно применяется</th></tr>
+        </thead>
+        <tbody id="pr_table_body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 7. ПОГРЕШНОСТЬ И КЛАСС ТОЧНОСТИ -->
+  <div class="calc-screen" id="tab-acc">
+    <div class="card">
+      <h2 class="card-title">7. Допустимая погрешность прибора (Поверка и отбраковка)</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> Сравниваешь рабочий манометр, датчик или самописец с образцовым прибором. Допустимо ли расхождение, или прибор врёт сверх своего класса точности и подлежит замене/ремонту?
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label>Нижний предел шкалы</label>
+          <input type="number" step="any" id="acc_min" value="0" oninput="calcAcc()">
+        </div>
+        <div class="field">
+          <label>Верхний предел шкалы</label>
+          <input type="number" step="any" id="acc_max" value="10" oninput="calcAcc()">
+        </div>
+        <div class="field">
+          <label>Класс точности (%)</label>
+          <select id="acc_cls" onchange="calcAcc()">
+            <option value="0.15">0.15 (высокоточный датчик)</option>
+            <option value="0.25">0.25 (образцовый / точный)</option>
+            <option value="0.4">0.4 (точный манометр)</option>
+            <option value="0.5">0.5 (вторичный прибор / ДИСК-250)</option>
+            <option value="1.0">1.0 (технический прибор)</option>
+            <option value="1.5" selected>1.5 (обычный рабочий манометр)</option>
+            <option value="2.5">2.5 (грубый манометр)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label style="color:var(--accent);">Показание эталона (образцового прибора):</label>
+          <input type="number" step="any" id="acc_ref" value="6.0" oninput="calcAcc()">
+        </div>
+        <div class="field">
+          <label style="color:var(--green);">Фактическое показание проверяемого прибора:</label>
+          <input type="number" step="any" id="acc_act" value="6.12" oninput="calcAcc()">
+        </div>
+      </div>
+
+      <div class="result-banner" id="acc_res_box">
+        <div class="res-main" id="acc_res_main">ГОДЕН (В допуске)</div>
+        <div class="res-sub" id="acc_res_sub">Допустимое отклонение: ±0.150 | Фактическое отклонение: +0.120</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. ЭЛЕКТРИКА И КАБЕЛЬ -->
+  <div class="calc-screen" id="tab-elec">
+    <div class="card">
+      <h2 class="card-title">8. Проверка цепи питания 24 В и сопротивления кабеля</h2>
+      <div class="hint-box">
+        <b>Для чего в цеху:</b> Позволяет проверить: 1) какое сопротивление имеет медная линия связи и на сколько градусов она завысит показания двухпроводного термосопротивления; 2) хватит ли напряжения блока питания 24 В для работы датчика 4–20 мА при заданной нагрузке ПЛК/вторичного прибора.
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label>Длина трассы кабеля (м):</label>
+          <input type="number" step="any" id="el_len" value="100" oninput="calcElec()">
+        </div>
+        <div class="field">
+          <label>Сечение жилы (мм²):</label>
+          <select id="el_sec" onchange="calcElec()">
+            <option value="0.35">0.35 мм² (КВВГ / МКЭШ)</option>
+            <option value="0.5">0.50 мм²</option>
+            <option value="0.75" selected>0.75 мм² (типовой КИП)</option>
+            <option value="1.0">1.0 мм²</option>
+            <option value="1.5">1.5 мм²</option>
+            <option value="2.5">2.5 мм²</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Сопротивление входа ПЛК (Ом):</label>
+          <input type="number" step="any" id="el_rplc" value="250" oninput="calcElec()">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Напряжение блока питания (В):</label>
+          <input type="number" step="any" id="el_vsup" value="24" oninput="calcElec()">
+        </div>
+        <div class="field">
+          <label>Мин. рабочее напряжение датчика по паспорту (В):</label>
+          <input type="number" step="any" id="el_vmin" value="12" oninput="calcElec()">
+        </div>
+      </div>
+
+      <div class="result-banner" id="el_res_box">
+        <div class="res-main" id="el_res_main">Петля 4–20 мА исправна (Запас: 6.9 В)</div>
+        <div class="res-sub" id="el_res_sub">Сопротивление 2 жил кабеля (туда-обратно): 4.67 Ом | На датчике при 20 мА остаётся: 18.9 В</div>
+      </div>
+      <div class="warn-box" id="el_rtd_warn"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleTheme() {
+  const b = document.body;
+  b.setAttribute('data-theme', b.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+}
+
+function openTab(id, btn) {
+  document.querySelectorAll('.calc-screen').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// 1. ТОКОВАЯ ПЕТЛЯ
+function getLoopBounds() {
+  const t = document.getElementById('loop_type').value;
+  if (t === '4_20') return { min: 4, max: 20, unit: 'мА', name: '4–20 мА' };
+  if (t === '0_5')  return { min: 0, max: 5,  unit: 'мА', name: '0–5 мА' };
+  if (t === '0_20') return { min: 0, max: 20, unit: 'мА', name: '0–20 мА' };
+  return { min: 0, max: 10, unit: 'В', name: '0–10 В' };
+}
+
+function setLoopScale(lrv, urv, unit) {
+  document.getElementById('loop_lrv').value = lrv;
+  document.getElementById('loop_urv').value = urv;
+  document.getElementById('loop_unit').value = unit;
+  calcLoop('scale');
+}
+
+let lastLoopMode = 'sig';
+function calcLoop(mode) {
+  if (mode === 'sig' || mode === 'pv') lastLoopMode = mode;
+  const b = getLoopBounds();
+  const lrv = parseFloat(document.getElementById('loop_lrv').value);
+  const urv = parseFloat(document.getElementById('loop_urv').value);
+  const unit = document.getElementById('loop_unit').value || '';
+
+  document.getElementById('lbl_loop_sig').innerText = `⚡ Введи сигнал (${b.unit}):`;
+  document.getElementById('lbl_loop_pv').innerText = `🎯 Или введи показание (${unit}):`;
+  document.getElementById('th_loop_sig').innerText = `Сигнал (${b.unit})`;
+
+  const box = document.getElementById('loop_res_box');
+  if (isNaN(lrv) || isNaN(urv) || lrv === urv) {
+    box.className = 'result-banner error';
+    document.getElementById('loop_res_main').innerText = 'Ошибка: укажите разные нижний и верхний пределы шкалы';
+    return;
+  }
+
+  let sig = parseFloat(document.getElementById('loop_sig').value);
+  let pv = parseFloat(document.getElementById('loop_pv').value);
+
+  if (lastLoopMode === 'sig') {
+    if (isNaN(sig)) return;
+    const frac = (sig - b.min) / (b.max - b.min);
+    pv = lrv + frac * (urv - lrv);
+    document.getElementById('loop_pv').value = Number(pv.toFixed(4));
+  } else {
+    if (isNaN(pv)) return;
+    const frac = (pv - lrv) / (urv - lrv);
+    sig = b.min + frac * (b.max - b.min);
+    document.getElementById('loop_sig').value = Number(sig.toFixed(4));
+  }
+
+  const pct = ((sig - b.min) / (b.max - b.min)) * 100;
+  let statusNote = '';
+  if (b.name === '4–20 мА') {
+    if (sig < 3.6) statusNote = ' ⚠️ ОБРЫВ ЦЕПИ ИЛИ АВАРИЯ ДАТЧИКА (< 3.6 мА по NAMUR NE43)!';
+    else if (sig < 4.0) statusNote = ' (Ниже 0% шкалы)';
+    else if (sig > 20.5) statusNote = ' ⚠️ ЗАШКАЛ / ПЕРЕГРУЗКА (> 20.5 мА)!';
+  }
+
+  box.className = (sig < b.min * 0.9 || sig > b.max * 1.05) ? 'result-banner error' : 'result-banner';
+  document.getElementById('loop_res_main').innerText = `${pv.toFixed(3)} ${unit}  |  ${sig.toFixed(2)} ${b.unit} (${pct.toFixed(1)}%)`;
+  const v250 = b.unit === 'мА' ? (sig * 0.25).toFixed(3) + ' В' : '—';
+  const v500 = b.unit === 'мА' ? (sig * 0.50).toFixed(3) + ' В' : '—';
+  document.getElementById('loop_res_sub').innerText = `Падение на шунте 250 Ом: ${v250} | На шунте 500 Ом: ${v500}${statusNote}`;
+
+  const tbody = document.getElementById('loop_table_body');
+  tbody.innerHTML = '';
+  [0, 25, 50, 75, 100].forEach(p => {
+    const f = p / 100;
+    const pVal = lrv + f * (urv - lrv);
+    const sVal = b.min + f * (b.max - b.min);
+    const vVal = b.unit === 'мА' ? (sVal * 0.25).toFixed(2) + ' В' : '—';
+    tbody.innerHTML += `<tr><td><b>${p}%</b></td><td>${pVal.toFixed(3)} ${unit}</td><td><b>${sVal.toFixed(2)} ${b.unit}</b></td><td>${vVal}</td></tr>`;
+  });
+}
+
+// 2. ТЕРМОСОПРОТИВЛЕНИЯ (ГОСТ 6651)
+const RTD_SPECS = {
+  'Pt100':  { r0: 100,  type: 'pt', A: 3.9083e-3, B: -5.775e-7, alpha: 0.00385, name: 'Pt100 (α=0.00385)' },
+  'Pt1000': { r0: 1000, type: 'pt', A: 3.9083e-3, B: -5.775e-7, alpha: 0.00385, name: 'Pt1000 (α=0.00385)' },
+  '100P':   { r0: 100,  type: 'pt', A: 3.9690e-3, B: -5.841e-7, alpha: 0.00391, name: '100П ГОСТ (α=0.00391)' },
+  '50P':    { r0: 50,   type: 'pt', A: 3.9690e-3, B: -5.841e-7, alpha: 0.00391, name: '50П ГОСТ (α=0.00391)' },
+  '100M':   { r0: 100,  type: 'cu', alpha: 0.00428, name: '100М Медь ГОСТ (α=0.00428)' },
+  '50M':    { r0: 50,   type: 'cu', alpha: 0.00428, name: '50М Медь ГОСТ (α=0.00428)' }
+};
+
+function rtdTtoR(spec, t) {
+  if (spec.type === 'cu') return spec.r0 * (1 + spec.alpha * t);
+  if (t >= 0) return spec.r0 * (1 + spec.A * t + spec.B * t * t);
+  return spec.r0 * (1 + spec.A * t + spec.B * t * t - 4.183e-12 * (t - 100) * t * t * t);
+}
+
+function rtdRtoT(spec, r) {
+  if (spec.type === 'cu') return (r / spec.r0 - 1) / spec.alpha;
+  // Newton-Raphson for accurate inverse over -200..+850 C
+  let t = (r / spec.r0 - 1) / spec.alpha;
+  for (let i = 0; i < 8; i++) {
+    const f = rtdTtoR(spec, t) - r;
+    const df = (rtdTtoR(spec, t + 0.01) - rtdTtoR(spec, t - 0.01)) / 0.02;
+    t -= f / df;
+  }
+  return t;
+}
+
+function calcRtd(mode) {
+  const key = document.getElementById('rtd_type').value;
+  const spec = RTD_SPECS[key];
+  const lead = parseFloat(document.getElementById('rtd_lead').value) || 0;
+  let rMeas = parseFloat(document.getElementById('rtd_r').value);
+  let tVal = parseFloat(document.getElementById('rtd_t').value);
+
+  if (mode === 'r') {
+    if (isNaN(rMeas)) return;
+    const rSensor = rMeas - lead;
+    tVal = rtdRtoT(spec, rSensor);
+    document.getElementById('rtd_t').value = Number(tVal.toFixed(2));
+  } else {
+    if (isNaN(tVal)) return;
+    const rSensor = rtdTtoR(spec, tVal);
+    rMeas = rSensor + lead;
+    document.getElementById('rtd_r').value = Number(rMeas.toFixed(2));
+  }
+
+  const sens = spec.r0 * spec.alpha;
+  const leadErr = lead / sens;
+  document.getElementById('rtd_res_main').innerText = `${tVal.toFixed(1)} °C  ↔  ${rMeas.toFixed(2)} Ом`;
+  document.getElementById('rtd_res_sub').innerText = `${spec.name}: при 0 °C = ${spec.r0} Ом | Чувствительность: ~${sens.toFixed(3)} Ом/°C` +
+    (lead > 0 ? ` | Кабель ${lead} Ом завышает показания при 2-пров. схеме на +${leadErr.toFixed(1)} °C!` : '');
+
+  const tbody = document.getElementById('rtd_table_body');
+  tbody.innerHTML = '';
+  [-50, 0, 20, 50, 100, 150, 200, 300].forEach(temp => {
+    if (spec.type === 'cu' && temp > 200) return;
+    const r = rtdTtoR(spec, temp);
+    const r10 = rtdTtoR(spec, temp + 10) - r;
+    tbody.innerHTML += `<tr><td><b>${temp} °C</b></td><td><b>${r.toFixed(2)} Ом</b></td><td>+${r10.toFixed(2)} Ом</td></tr>`;
+  });
+}
+
+// 3. ТЕРМОПАРЫ (ГОСТ Р 8.585)
+// Табличные узлы НСХ (температура °C -> мВ при Тхс = 0 °C) с точной кусочно-кубической/линейной интерполяцией
+const TC_TABLES = {
+  'K': [[-50,-1.889],[0,0],[20,0.798],[25,1.000],[50,2.023],[100,4.096],[200,8.138],[300,12.209],[400,16.397],[500,20.644],[600,24.905],[700,29.129],[800,33.275],[900,37.326],[1000,41.276],[1100,45.119]],
+  'L': [[-50,-2.19],[0,0],[20,0.95],[25,1.19],[50,2.41],[100,4.94],[200,10.16],[300,15.69],[400,21.52],[500,27.60],[600,33.91]],
+  'J': [[-50,-2.431],[0,0],[20,1.019],[25,1.277],[50,2.585],[100,5.269],[200,10.779],[300,16.327],[400,21.848],[500,27.393],[600,33.102],[700,39.132]],
+  'S': [[0,0],[20,0.113],[25,0.143],[50,0.299],[100,0.646],[200,1.441],[300,2.323],[400,3.259],[500,4.233],[600,5.239],[700,6.275],[800,7.345],[900,8.449],[1000,9.587],[1100,10.757],[1200,11.951],[1300,13.159]]
+};
+
+function interp(pts, x, colX, colY) {
+  if (x <= pts[0][colX]) {
+    const k = (pts[1][colY] - pts[0][colY]) / (pts[1][colX] - pts[0][colX]);
+    return pts[0][colY] + k * (x - pts[0][colX]);
+  }
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (x >= pts[i][colX] && x <= pts[i+1][colX]) {
+      const f = (x - pts[i][colX]) / (pts[i+1][colX] - pts[i][colX]);
+      return pts[i][colY] + f * (pts[i+1][colY] - pts[i][colY]);
+    }
+  }
+  const n = pts.length - 1;
+  const k = (pts[n][colY] - pts[n-1][colY]) / (pts[n][colX] - pts[n-1][colX]);
+  return pts[n][colY] + k * (x - pts[n][colX]);
+}
+
+function calcTc(mode) {
+  const type = document.getElementById('tc_type').value;
+  const pts = TC_TABLES[type];
+  const tCold = parseFloat(document.getElementById('tc_cold').value) || 0;
+  const mvCold = interp(pts, tCold, 0, 1);
+
+  let mvMeas = parseFloat(document.getElementById('tc_mv').value);
+  let tHot = parseFloat(document.getElementById('tc_t').value);
+
+  if (mode === 'mv') {
+    if (isNaN(mvMeas)) return;
+    const mvTotal = mvMeas + mvCold;
+    tHot = interp(pts, mvTotal, 1, 0);
+    document.getElementById('tc_t').value = Number(tHot.toFixed(1));
+  } else {
+    if (isNaN(tHot)) return;
+    const mvTotal = interp(pts, tHot, 0, 1);
+    mvMeas = mvTotal - mvCold;
+    document.getElementById('tc_mv').value = Number(mvMeas.toFixed(3));
+  }
+
+  document.getElementById('tc_res_main').innerText = `Температура: ${tHot.toFixed(1)} °C  ↔  На клеммах: ${mvMeas.toFixed(3)} мВ`;
+  document.getElementById('tc_res_sub').innerText = `ЭДС холодного спая при ${tCold} °C: ${mvCold.toFixed(3)} мВ | Полная термо-ЭДС относительно 0 °C: ${(mvMeas + mvCold).toFixed(3)} мВ`;
+}
+
+// 4. РАСХОД ПО ПЕРЕПАДУ
+function calcDp(mode) {
+  const dpMax = parseFloat(document.getElementById('dp_max').value);
+  const qMax = parseFloat(document.getElementById('dp_qmax').value);
+  const unit = document.getElementById('dp_unit').value;
+  let dp = parseFloat(document.getElementById('dp_val').value);
+  let q = parseFloat(document.getElementById('dp_q').value);
+
+  if (isNaN(dpMax) || dpMax <= 0 || isNaN(qMax) || qMax <= 0) return;
+
+  if (mode === 'dp') {
+    if (isNaN(dp) || dp < 0) dp = 0;
+    q = qMax * Math.sqrt(dp / dpMax);
+    document.getElementById('dp_q').value = Number(q.toFixed(2));
+  } else {
+    if (isNaN(q) || q < 0) q = 0;
+    dp = dpMax * Math.pow(q / qMax, 2);
+    document.getElementById('dp_val').value = Number(dp.toFixed(3));
+  }
+
+  const qPct = (q / qMax) * 100;
+  const dpPct = (dp / dpMax) * 100;
+  const maLin = 4 + 16 * (dp / dpMax);
+  const maSqrt = 4 + 16 * (q / qMax);
+
+  document.getElementById('dp_res_main').innerText = `Расход: ${q.toFixed(2)} (${qPct.toFixed(1)}% шкалы)`;
+  document.getElementById('dp_res_sub').innerText = `Перепад ΔP: ${dp.toFixed(3)} ${unit} (${dpPct.toFixed(1)}% от ΔPмакс) | Ток датчика (линейный): ${maLin.toFixed(2)} мА | Ток (с извлечением корня): ${maSqrt.toFixed(2)} мА`;
+
+  const tbody = document.getElementById('dp_table_body');
+  tbody.innerHTML = '';
+  [0, 20, 25, 50, 75, 80, 100].forEach(pctQ => {
+    const fQ = pctQ / 100;
+    const fDp = fQ * fQ;
+    const curQ = qMax * fQ;
+    const curDp = dpMax * fDp;
+    const iLin = 4 + 16 * fDp;
+    const iSqrt = 4 + 16 * fQ;
+    tbody.innerHTML += `<tr><td><b>${pctQ}%</b></td><td>${curQ.toFixed(1)}</td><td>${(fDp*100).toFixed(1)}%</td><td><b>${curDp.toFixed(3)} ${unit}</b></td><td>${iLin.toFixed(2)} / ${iSqrt.toFixed(2)} мА</td></tr>`;
+  });
+}
+
+// 5. ГИДРОСТАТИЧЕСКИЙ УРОВЕНЬ
+function onLvlRhoSel() {
+  const v = document.getElementById('lvl_rho_sel').value;
+  if (v !== 'custom') {
+    document.getElementById('lvl_rho').value = v;
+    calcLevel('h');
+  }
+}
+
+function calcLevel(mode) {
+  const rho = parseFloat(document.getElementById('lvl_rho').value) || 1000;
+  const g = 9.80665;
+  let hMm = parseFloat(document.getElementById('lvl_h').value);
+  let pKpa = parseFloat(document.getElementById('lvl_p').value);
+
+  if (mode === 'h') {
+    if (isNaN(hMm)) return;
+    pKpa = (rho * g * (hMm / 1000)) / 1000;
+    document.getElementById('lvl_p').value = Number(pKpa.toFixed(3));
+  } else {
+    if (isNaN(pKpa)) return;
+    hMm = (pKpa * 1000) / (rho * g) * 1000;
+    document.getElementById('lvl_h').value = Number(hMm.toFixed(1));
+  }
+
+  const mmH2O = pKpa * 101.9716;
+  const kgfCm2 = pKpa * 0.01019716;
+  document.getElementById('lvl_res_main').innerText = `Давление: ${pKpa.toFixed(3)} кПа  (${mmH2O.toFixed(0)} мм вод. ст.)`;
+  document.getElementById('lvl_res_sub').innerText = `Уровень жидкости: ${hMm.toFixed(0)} мм (${(hMm/1000).toFixed(3)} м) | В кгс/см²: ${kgfCm2.toFixed(4)} кгс/см²`;
+}
+
+// 6. КОНВЕРТЕР ДАВЛЕНИЯ
+const PR_FACTORS_TO_PA = {
+  'kgf_cm2': 98066.5,
+  'MPa': 1000000,
+  'kPa': 1000,
+  'bar': 100000,
+  'mmH2O': 9.80665,
+  'Pa': 1,
+  'mmHg': 133.322368
+};
+
+function calcPress() {
+  const val = parseFloat(document.getElementById('pr_val').value) || 0;
+  const u = document.getElementById('pr_unit').value;
+  const pa = val * PR_FACTORS_TO_PA[u];
+
+  const rows = [
+    ['кгс/см² (ат)', pa / 98066.5, 'Манометры СССР/РФ, котлы, трубопроводы'],
+    ['МПа', pa / 1000000, 'Современные датчики давления (Метран, ОВЕН)'],
+    ['кПа', pa / 1000, 'Датчики перепада давления, газ низкого/среднего давления'],
+    ['бар (bar)', pa / 100000, 'Импортные манометры, клапаны и реле (Danfoss, WIKA)'],
+    ['мм вод. ст. (кгс/м²)', pa / 9.80665, 'Тягонапоромеры, разрежение в топке, перепад на шайбе'],
+    ['Па (Паскаль)', pa, 'Тяга и воздух вентиляторов на современных щитах'],
+    ['мм рт. ст.', pa / 133.322368, 'Вакуумметры, атмосферное давление']
+  ];
+
+  const tbody = document.getElementById('pr_table_body');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const formatted = Math.abs(r[1]) >= 100 ? r[1].toFixed(2) : Number(r[1].toPrecision(6));
+    tbody.innerHTML += `<tr><td><b>${r[0]}</b></td><td><b style="color:var(--accent); font-size:15px;">${formatted}</b></td><td style="text-align:left; font-size:12.5px; color:var(--muted);">${r[2]}</td></tr>`;
+  });
+}
+
+// 7. ПОГРЕШНОСТЬ
+function calcAcc() {
+  const min = parseFloat(document.getElementById('acc_min').value) || 0;
+  const max = parseFloat(document.getElementById('acc_max').value) || 10;
+  const cls = parseFloat(document.getElementById('acc_cls').value) || 1.5;
+  const ref = parseFloat(document.getElementById('acc_ref').value) || 0;
+  const act = parseFloat(document.getElementById('acc_act').value) || 0;
+
+  const span = Math.abs(max - min);
+  const maxErr = span * (cls / 100);
+  const absErr = act - ref;
+  const relErr = (Math.abs(absErr) / span) * 100;
+  const ok = Math.abs(absErr) <= maxErr + 1e-9;
+
+  const box = document.getElementById('acc_res_box');
+  box.className = ok ? 'result-banner' : 'result-banner error';
+  document.getElementById('acc_res_main').innerText = ok
+    ? `✅ ПРИБОР В ДОПУСКЕ (Погрешность ${relErr.toFixed(2)}% при норме ±${cls}%)`
+    : `❌ БРАК / ПРЕВЫШЕНИЕ КЛАССА (Погрешность ${relErr.toFixed(2)}% > ${cls}%)`;
+  document.getElementById('acc_res_sub').innerText =
+    `Диапазон шкалы: ${span} | Допустимое расхождение: ±${maxErr.toFixed(3)} (от ${(ref - maxErr).toFixed(3)} до ${(ref + maxErr).toFixed(3)}) | Фактическое отклонение: ${absErr >= 0 ? '+' : ''}${absErr.toFixed(3)}`;
+}
+
+// 8. ЭЛЕКТРИКА И КАБЕЛЬ
+function calcElec() {
+  const len = parseFloat(document.getElementById('el_len').value) || 0;
+  const sec = parseFloat(document.getElementById('el_sec').value) || 0.75;
+  const rPlc = parseFloat(document.getElementById('el_rplc').value) || 250;
+  const vSup = parseFloat(document.getElementById('el_vsup').value) || 24;
+  const vMin = parseFloat(document.getElementById('el_vmin').value) || 12;
+
+  const rhoCu = 0.0175; // Ом*мм²/м при +20 °C
+  const rOneWire = (rhoCu * len) / sec;
+  const rLoopWires = rOneWire * 2;
+  const rTotalLoad = rPlc + rLoopWires;
+  const vDropAt20mA = 0.020 * rTotalLoad;
+  const vSensor = vSup - vDropAt20mA;
+  const margin = vSensor - vMin;
+
+  const box = document.getElementById('el_res_box');
+  box.className = margin >= 0 ? 'result-banner' : 'result-banner error';
+  document.getElementById('el_res_main').innerText = margin >= 0
+    ? `✅ Напряжения хватает (На клеммах датчика при 20 мА: ${vSensor.toFixed(2)} В)`
+    : `❌ НЕХВАТКА НАПРЯЖЕНИЯ В ПЕТЛЕ! (Остаётся ${vSensor.toFixed(2)} В при мин. ${vMin} В)`;
+  document.getElementById('el_res_sub').innerText =
+    `Сопротивление 1 жилы: ${rOneWire.toFixed(2)} Ом | Петля (2 жилы): ${rLoopWires.toFixed(2)} Ом | Падение на Rвх + кабель при 20 мА: ${vDropAt20mA.toFixed(2)} В`;
+
+  const err50M = rLoopWires / (50 * 0.00428);
+  const errPt100 = rLoopWires / (100 * 0.00385);
+  document.getElementById('el_rtd_warn').innerHTML =
+    `💡 <b>Для термометров сопротивления на этой трассе (${len} м, ${sec} мм²):</b><br>` +
+    `Если подключить датчик по <b>2-проводной схеме</b> без компенсации, сопротивление кабеля (${rLoopWires.toFixed(2)} Ом) завысит температуру:<br>` +
+    `• для датчика <b>50М</b> — на <b>+${err50M.toFixed(1)} °C</b>;<br>` +
+    `• для датчика <b>Pt100 / 100П</b> — на <b>+${errPt100.toFixed(1)} °C</b>.<br>` +
+    `Именно поэтому используется 3-проводная или 4-проводная схема подключения!`;
+}
+
+// Инициализация всех расчётов при запуске
+calcLoop('sig');
+calcRtd('r');
+calcTc('mv');
+calcDp('dp');
+calcLevel('h');
+calcPress();
+calcAcc();
+calcElec();
+</script>
+</body>
+</html>
